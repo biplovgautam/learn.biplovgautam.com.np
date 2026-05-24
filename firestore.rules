@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Published content: readable by everyone
+    match /blogPosts/{postId} {
+      allow read: if resource.data.status == 'published';
+      allow write: if false; // All writes go through Admin SDK
+    }
+
+    match /tutorials/{tutorialId} {
+      allow read: if resource.data.status == 'published';
+      allow write: if false;
+    }
+
+    match /courses/{courseId} {
+      allow read: if resource.data.status == 'published';
+      allow write: if false;
+
+      match /modules/{moduleId} {
+        allow read: if true;
+        allow write: if false;
+
+        match /lessons/{lessonId} {
+          allow read: if true;
+          allow write: if false;
+        }
+      }
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false; // All writes via Admin SDK
+    }
+
+    // Future: user progress tracking
+    match /userProgress/{progressId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+    }
+
+    match /enrollments/{enrollmentId} {
+      allow read: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.userId;
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.userId;
+    }
+
+    // Deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
