@@ -44,7 +44,7 @@ export function ProfileShell({ children }: { children: React.ReactNode }) {
   const firstName = user.displayName?.split(" ")[0] || "You";
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 md:py-12">
       {/* Profile header card */}
       <div className="rounded-3xl border border-border bg-muted/20 p-6 md:p-8 mb-6">
         <div className="flex items-center gap-5 flex-wrap">
@@ -80,7 +80,7 @@ export function ProfileShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Tabs */}
-      <div className="rounded-full border border-border bg-muted/30 p-1 inline-flex flex-wrap mb-8">
+      <div className="rounded-full border border-border bg-muted/30 p-1 inline-flex flex-wrap mb-6 md:mb-8 max-w-full overflow-x-auto">
         {tabs.map((tab) => {
           const active = pathname === tab.href;
           return (

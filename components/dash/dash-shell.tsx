@@ -41,18 +41,18 @@ export function DashShell({
   const firstName = user?.displayName?.split(" ")[0] || "you";
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
       {/* Top bar — greeting + stats */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
         <div>
           <p className="label-mono mb-1">Dashboard</p>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
             Hey, {firstName} <span className="inline-block">👋</span>
           </h1>
         </div>
 
-        {/* Stats only */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Stats — scroll horizontally on mobile */}
+        <div className="flex items-center gap-2 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0 sm:flex-wrap">
           <StatChip
             icon={<Zap size={14} strokeWidth={2} />}
             label="Bi Points"
@@ -75,7 +75,7 @@ export function DashShell({
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-border mb-8 overflow-x-auto">
+      <div className="border-b border-border mb-6 md:mb-8 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
         <nav className="flex items-center gap-1 min-w-max">
           {tabs.map(({ label, href, Icon }) => {
             const active =
@@ -127,7 +127,7 @@ function StatChip({
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5",
+        "shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-1.5",
         tones[tone]
       )}
     >

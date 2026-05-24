@@ -14,23 +14,65 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "BiLearnHub — Applied AI, ROS 2 & Software Engineering",
+    default: "BiLearnHub — Applied AI, ROS 2 & Software Engineering by Biplov Gautam",
     template: "%s | BiLearnHub",
   },
   description:
-    "Courses, tutorials, and articles on Applied AI, ROS 2 robotics, and modern software engineering by Biplov Gautam.",
+    "Open courseware on Applied AI (LLMs, RAG, agents), ROS 2 robotics (SLAM, Nav2), and modern software engineering. Structured courses, focused tutorials, and in-depth articles by Biplov Gautam.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || "https://learn.biplovgautam.com.np"
   ),
+  keywords: [
+    "Applied AI",
+    "LLM",
+    "RAG",
+    "AI agents",
+    "ROS 2",
+    "Robot Operating System",
+    "robotics",
+    "SLAM",
+    "Nav2",
+    "software engineering",
+    "Python",
+    "TypeScript",
+    "Biplov Gautam",
+    "BiLearnHub",
+    "online courses",
+    "robotics tutorials",
+    "AI tutorials",
+  ],
+  authors: [{ name: "Biplov Gautam", url: "https://biplovgautam.com.np" }],
+  creator: "Biplov Gautam",
+  publisher: "BiLearnHub",
+  category: "Education",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
   openGraph: {
     type: "website",
     locale: "en_US",
     siteName: "BiLearnHub",
+    title: "BiLearnHub — Applied AI, ROS 2 & Software Engineering",
+    description:
+      "Open courseware on Applied AI, ROS 2 robotics, and modern software engineering by Biplov Gautam.",
+    images: [
+      {
+        url: "/footer.png",
+        width: 1200,
+        height: 630,
+        alt: "BiLearnHub — Knowledge that matters",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BiLearnHub — Applied AI, ROS 2 & Software Engineering",
+    description:
+      "Open courseware on Applied AI, ROS 2 robotics, and modern software engineering.",
+    creator: "@BiplovGautam_",
+    images: ["/footer.png"],
   },
 };
 
