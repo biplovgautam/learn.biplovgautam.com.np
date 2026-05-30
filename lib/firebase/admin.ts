@@ -1,8 +1,10 @@
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import {
   initializeApp,
   getApps,
   cert,
-  refreshToken,
   applicationDefault,
   type App,
 } from "firebase-admin/app";
@@ -99,12 +101,25 @@ function getAdminApp(): App {
   // 1b. ADC "authorized_user" credentials, base64-encoded. Use when service
   //     account key creation is blocked by org policy. This is the contents of
   //     ~/.config/gcloud/application_default_credentials.json.
+  //
+  //     The Firestore client only accepts a cert credential or genuine ADC —
+  //     it rejects firebase-admin's refreshToken() credential. So we write the
+  //     JSON to /tmp and point GOOGLE_APPLICATION_CREDENTIALS at it, then use
+  //     applicationDefault(); that path is accepted by both Auth and Firestore.
   const adcB64 = process.env.FIREBASE_ADMIN_ADC_BASE64?.trim();
   if (adcB64) {
-    const json = JSON.parse(Buffer.from(adcB64, "base64").toString("utf8"));
+    const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
+    const json = Buffer.from(adcB64, "base64").toString("utf8");
+    const credPath = join(tmpdir(), "adc-credentials.json");
+    writeFileSync(credPath, json);
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = credPath;
+    if (projectId) {
+      process.env.GOOGLE_CLOUD_PROJECT = projectId;
+      process.env.GCLOUD_PROJECT = projectId;
+    }
     _app = initializeApp({
-      credential: refreshToken(json),
-      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+      credential: applicationDefault(),
+      projectId,
     });
     return _app;
   }
