@@ -16,7 +16,8 @@ export function isFirebaseAdminConfigured(): boolean {
   const hasProjectId = !!process.env.FIREBASE_ADMIN_PROJECT_ID;
   const hasServiceAccount = !!(
     process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim() &&
-    process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim()
+    (process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim() ||
+      process.env.FIREBASE_ADMIN_PRIVATE_KEY_BASE64?.trim())
   );
 
   // Without a service account key, we rely on ADC (gcloud auth).
@@ -37,14 +38,24 @@ export function isFirebaseAdminConfigured(): boolean {
 }
 
 /**
- * Normalizes a service-account private key pulled from an env var.
- * Handles the two ways the key commonly gets mangled:
- *  - wrapped in surrounding double/single quotes (copied from JSON)
- *  - escaped "\n" sequences instead of real newlines
- * Without this you get: error:1E08010C:DECODER routines::unsupported
+ * Resolves the service-account private key from env vars.
+ *
+ * Preferred: FIREBASE_ADMIN_PRIVATE_KEY_BASE64 — the entire PEM base64-encoded.
+ * This is immune to newline mangling by hosting dashboards (the usual cause of
+ * "error:1E08010C:DECODER routines::unsupported").
+ *
+ * Fallback: FIREBASE_ADMIN_PRIVATE_KEY — raw PEM. We strip surrounding quotes
+ * and convert escaped "\n" into real newlines.
  */
-function normalizePrivateKey(raw?: string): string | undefined {
+function resolvePrivateKey(): string | undefined {
+  const b64 = process.env.FIREBASE_ADMIN_PRIVATE_KEY_BASE64?.trim();
+  if (b64) {
+    return Buffer.from(b64, "base64").toString("utf8").trim();
+  }
+
+  const raw = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
   if (!raw) return undefined;
+
   let key = raw.trim();
   if (
     (key.startsWith('"') && key.endsWith('"')) ||
@@ -66,7 +77,7 @@ function getAdminApp(): App {
 
   // If private key is available, use service account cert
   // Otherwise fall back to Application Default Credentials (ADC)
-  const privateKey = normalizePrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
+  const privateKey = resolvePrivateKey();
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
   const hasServiceAccount = !!(clientEmail && privateKey);
 
