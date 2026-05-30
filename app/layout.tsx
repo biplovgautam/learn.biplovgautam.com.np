@@ -14,32 +14,34 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "BiLearnHub — Applied AI, ROS 2 & Software Engineering by Biplov Gautam",
+    default: "BiLearnHub — ROS 2, Robotics & Intelligent Systems by Biplov Gautam",
     template: "%s | BiLearnHub",
   },
   description:
-    "Open courseware on Applied AI (LLMs, RAG, agents), ROS 2 robotics (SLAM, Nav2), and modern software engineering. Structured courses, focused tutorials, and in-depth articles by Biplov Gautam.",
+    "Open courseware on ROS 2, robotics, and intelligent systems — nodes, topics, SLAM, Nav2, MoveIt, perception, planning, and control. Structured courses, focused tutorials, and in-depth articles by Biplov Gautam.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL || "https://learn.biplovgautam.com.np"
   ),
   keywords: [
-    "Applied AI",
-    "LLM",
-    "RAG",
-    "AI agents",
     "ROS 2",
+    "ROS2",
     "Robot Operating System",
     "robotics",
+    "intelligent systems",
+    "autonomous robots",
     "SLAM",
     "Nav2",
-    "software engineering",
-    "Python",
-    "TypeScript",
+    "MoveIt",
+    "robot perception",
+    "motion planning",
+    "robot control",
+    "micro-ROS",
+    "Gazebo",
+    "Python robotics",
     "Biplov Gautam",
     "BiLearnHub",
-    "online courses",
-    "robotics tutorials",
-    "AI tutorials",
+    "robotics courses",
+    "ROS 2 tutorials",
   ],
   authors: [{ name: "Biplov Gautam", url: "https://biplovgautam.com.np" }],
   creator: "Biplov Gautam",
@@ -54,9 +56,9 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     siteName: "BiLearnHub",
-    title: "BiLearnHub — Applied AI, ROS 2 & Software Engineering",
+    title: "BiLearnHub — ROS 2, Robotics & Intelligent Systems",
     description:
-      "Open courseware on Applied AI, ROS 2 robotics, and modern software engineering by Biplov Gautam.",
+      "Open courseware on ROS 2, robotics, and intelligent systems by Biplov Gautam.",
     images: [
       {
         url: "/footer.png",
@@ -68,9 +70,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "BiLearnHub — Applied AI, ROS 2 & Software Engineering",
+    title: "BiLearnHub — ROS 2, Robotics & Intelligent Systems",
     description:
-      "Open courseware on Applied AI, ROS 2 robotics, and modern software engineering.",
+      "Open courseware on ROS 2, robotics, and intelligent systems.",
     creator: "@BiplovGautam_",
     images: ["/footer.png"],
   },

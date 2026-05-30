@@ -129,7 +129,7 @@ export function generateWebsiteJsonLd() {
     alternateName: "Learn with Biplov",
     url: SITE_URL,
     description:
-      "Open courseware on Applied AI, ROS 2 robotics, and modern software engineering by Biplov Gautam.",
+      "Open courseware on ROS 2, robotics, and intelligent systems by Biplov Gautam.",
     author: AUTHOR,
     publisher: PROVIDER,
     inLanguage: "en",

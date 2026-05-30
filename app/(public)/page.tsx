@@ -36,21 +36,21 @@ export default function HomePage() {
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
                   </span>
                   <span className="text-muted-foreground">
-                    Applied AI engineer &middot; now diving into ROS 2
+                    Robotics &middot; ROS 2 &middot; intelligent systems
                   </span>
                 </span>
               </div>
 
               {/* Headline */}
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-[0.95] tracking-tight">
-                Where Applied AI meets{" "}
-                <span className="text-primary">real robotics.</span>
+                Build robots that{" "}
+                <span className="text-primary">think and move.</span>
               </h1>
 
               <p className="text-lg text-muted-foreground mt-8 max-w-xl leading-relaxed">
-                Courses, tutorials, and articles on Applied AI, ROS 2, and
-                modern software engineering—built by an engineer shipping
-                production AI systems and learning robotics out loud.
+                Courses, tutorials, and articles on ROS 2, robotics, and
+                intelligent systems—from your first node to autonomous
+                navigation, explained step by step with hands-on code.
               </p>
 
               {/* CTAs */}
@@ -103,16 +103,16 @@ export default function HomePage() {
           {/* Stats bar */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mt-12 md:mt-20 max-w-3xl pt-8 border-t border-border">
             <div>
-              <p className="label-mono mb-2">Applied AI</p>
-              <p className="text-sm">LLMs &middot; RAG &middot; Agents</p>
+              <p className="label-mono mb-2">ROS 2</p>
+              <p className="text-sm">Nodes &middot; Topics &middot; Services</p>
             </div>
             <div>
               <p className="label-mono mb-2">Robotics</p>
-              <p className="text-sm">ROS 2 &middot; SLAM &middot; Nav2</p>
+              <p className="text-sm">SLAM &middot; Nav2 &middot; MoveIt</p>
             </div>
             <div>
-              <p className="label-mono mb-2">Engineering</p>
-              <p className="text-sm">Python &middot; TypeScript &middot; Systems</p>
+              <p className="label-mono mb-2">Intelligent systems</p>
+              <p className="text-sm">Perception &middot; Planning &middot; Control</p>
             </div>
           </div>
         </div>
@@ -166,10 +166,10 @@ export default function HomePage() {
                     ROS 2
                   </span>
                   <span className="rounded-full border border-border bg-background/50 px-3 py-1 text-xs">
-                    Applied AI
+                    Navigation
                   </span>
                   <span className="rounded-full border border-border bg-background/50 px-3 py-1 text-xs">
-                    Systems
+                    Perception
                   </span>
                 </div>
               </div>

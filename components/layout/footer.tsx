@@ -42,8 +42,8 @@ export function Footer() {
               className="h-auto w-auto max-w-[280px] mb-5"
             />
             <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-              Open courseware on Applied AI, ROS 2 robotics, and modern
-              software engineering by Biplov Gautam.
+              Open courseware on ROS 2, robotics, and intelligent systems by
+              Biplov Gautam.
             </p>
 
             {/* Social */}
