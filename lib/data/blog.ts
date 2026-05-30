@@ -1,5 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { connection } from "next/server";
 import { adminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { serialize } from "@/lib/utils";
 import type { BlogPost } from "@/lib/types";
 
 export async function getBlogPosts(): Promise<BlogPost[]> {
@@ -16,7 +18,7 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
     .get();
 
   return snapshot.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() }) as BlogPost
+    (doc) => serialize({ id: doc.id, ...doc.data() }) as BlogPost
   );
 }
 
@@ -37,17 +39,19 @@ export async function getBlogPostBySlug(
     .get();
 
   if (snapshot.empty) return null;
-  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as BlogPost;
+  return serialize({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() }) as BlogPost;
 }
 
 export async function getBlogPostById(id: string): Promise<BlogPost | null> {
+  await connection();
   if (!isFirebaseAdminConfigured()) return null;
   const doc = await adminDb.collection("blogPosts").doc(id).get();
   if (!doc.exists) return null;
-  return { id: doc.id, ...doc.data() } as BlogPost;
+  return serialize({ id: doc.id, ...doc.data() }) as BlogPost;
 }
 
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
+  await connection();
   if (!isFirebaseAdminConfigured()) return [];
   const snapshot = await adminDb
     .collection("blogPosts")
@@ -55,7 +59,7 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
     .get();
 
   return snapshot.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() }) as BlogPost
+    (doc) => serialize({ id: doc.id, ...doc.data() }) as BlogPost
   );
 }
 

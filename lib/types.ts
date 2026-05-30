@@ -1,7 +1,9 @@
-import { Timestamp } from "firebase/firestore";
-
 export type ContentStatus = "draft" | "published";
 export type Difficulty = "beginner" | "intermediate" | "advanced";
+
+// Firestore Timestamps are serialized to ISO strings at the data layer
+// so they can safely cross the Server -> Client Component boundary.
+export type ISODate = string;
 
 export interface Course {
   id: string;
@@ -15,10 +17,11 @@ export interface Course {
   tags: string[];
   estimatedHours: number;
   biPoints: number; // total bi points awarded for completing whole course
+  authors: string[]; // one or more author names credited on the course
   moduleOrder: string[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  publishedAt: Timestamp | null;
+  createdAt: ISODate;
+  updatedAt: ISODate;
+  publishedAt: ISODate | null;
 }
 
 export interface Module {
@@ -28,8 +31,8 @@ export interface Module {
   description: string;
   order: number;
   lessonOrder: string[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: ISODate;
+  updatedAt: ISODate;
 }
 
 export interface Lesson {
@@ -40,8 +43,8 @@ export interface Lesson {
   order: number;
   estimatedMinutes: number;
   biPoints: number; // points awarded for completing this lesson
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: ISODate;
+  updatedAt: ISODate;
 }
 
 export interface Tutorial {
@@ -56,9 +59,9 @@ export interface Tutorial {
   difficulty: Difficulty;
   estimatedMinutes: number;
   biPoints: number;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  publishedAt: Timestamp | null;
+  createdAt: ISODate;
+  updatedAt: ISODate;
+  publishedAt: ISODate | null;
 }
 
 export interface BlogPost {
@@ -72,9 +75,9 @@ export interface BlogPost {
   tags: string[];
   category: string;
   biPoints: number;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  publishedAt: Timestamp | null;
+  createdAt: ISODate;
+  updatedAt: ISODate;
+  publishedAt: ISODate | null;
 }
 
 // TipTap JSON document structure
@@ -90,13 +93,13 @@ export interface UserProfile {
   displayName: string;
   firstName: string;
   photoURL: string;
-  createdAt: Timestamp;
-  lastLoginAt: Timestamp;
+  createdAt: ISODate;
+  lastLoginAt: ISODate;
   role: "admin" | "user";
   // Gamification
   biPoints: number;
   streak: number; // consecutive active days
-  lastActiveDate: Timestamp | null;
+  lastActiveDate: ISODate | null;
   level: number; // computed from biPoints
 }
 
@@ -108,15 +111,15 @@ export interface UserProgress {
   moduleId: string;
   lessonId: string;
   completed: boolean;
-  completedAt: Timestamp | null;
-  lastAccessedAt: Timestamp;
+  completedAt: ISODate | null;
+  lastAccessedAt: ISODate;
 }
 
 export interface Enrollment {
   id: string;
   userId: string;
   courseId: string;
-  enrolledAt: Timestamp;
-  completedAt: Timestamp | null;
+  enrolledAt: ISODate;
+  completedAt: ISODate | null;
   progress: number;
 }

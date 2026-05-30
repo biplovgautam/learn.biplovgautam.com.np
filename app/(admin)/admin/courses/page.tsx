@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
+import { BookOpen } from "lucide-react";
 import { getAllCourses } from "@/lib/data/courses";
 import { formatDate } from "@/lib/utils";
 import { deleteCourse } from "@/lib/data/admin";
@@ -26,8 +28,25 @@ async function CourseList() {
       {courses.map((course) => (
         <div
           key={course.id}
-          className="flex items-center justify-between rounded-lg border border-border p-4"
+          className="flex items-center gap-4 rounded-lg border border-border p-4"
         >
+          {/* Thumbnail */}
+          <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
+            {course.coverImage ? (
+              <Image
+                src={course.coverImage}
+                alt={course.title}
+                fill
+                className="object-cover"
+                sizes="96px"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                <BookOpen size={18} strokeWidth={1.6} />
+              </div>
+            )}
+          </div>
+
           <div className="flex-1 min-w-0">
             <Link
               href={`/admin/courses/${course.id}`}
@@ -52,7 +71,7 @@ async function CourseList() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex items-center gap-2 ml-auto shrink-0">
             <Link
               href={`/admin/courses/${course.id}`}
               className="rounded-md px-3 py-1.5 text-sm border border-border hover:bg-muted transition-colors"

@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { ImageUpload } from "@/components/editor/image-upload";
+import { useAutosave } from "@/components/editor/use-autosave";
+import { SaveStatusBadge } from "@/components/editor/save-status-badge";
 import { createBlogPost, updateBlogPost } from "@/lib/data/admin";
 import { slugify } from "@/lib/utils";
 import type { BlogPost, TipTapContent } from "@/lib/types";
@@ -15,6 +17,11 @@ interface BlogPostFormProps {
 export function BlogPostForm({ post }: BlogPostFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+
+  const [postId, setPostId] = useState<string | null>(post?.id ?? null);
+  const [currentStatus, setCurrentStatus] = useState<"draft" | "published">(
+    post?.status ?? "draft"
+  );
 
   const [title, setTitle] = useState(post?.title || "");
   const [slug, setSlug] = useState(post?.slug || "");
@@ -29,34 +36,58 @@ export function BlogPostForm({ post }: BlogPostFormProps) {
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
-    if (!post) setSlug(slugify(value));
+    if (!postId) setSlug(slugify(value));
   };
+
+  const buildData = (status: "draft" | "published") => ({
+    title,
+    slug: slug || slugify(title),
+    excerpt,
+    coverImage,
+    tags: tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean),
+    category,
+    biPoints,
+    content: content!,
+    status,
+  });
+
+  // Create on first save (capture id), update thereafter.
+  const persist = async (status: "draft" | "published") => {
+    const data = buildData(status);
+    if (postId) {
+      await updateBlogPost(postId, data);
+    } else {
+      const newId = await createBlogPost(data);
+      setPostId(newId);
+    }
+    setCurrentStatus(status);
+  };
+
+  const canSave = Boolean(title.trim()) && Boolean(content);
+
+  const { status: saveStatus } = useAutosave({
+    signature: JSON.stringify({
+      title,
+      slug,
+      excerpt,
+      coverImage,
+      tags,
+      category,
+      biPoints,
+      content,
+    }),
+    enabled: canSave,
+    onSave: () => persist(currentStatus),
+    delay: 5000,
+  });
 
   const handleSubmit = (status: "draft" | "published") => {
     startTransition(async () => {
-      const data = {
-        title,
-        slug: slug || slugify(title),
-        excerpt,
-        coverImage,
-        tags: tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
-        category,
-        biPoints,
-        content: content!,
-        status,
-      };
-
-      if (post) {
-        await updateBlogPost(post.id, data);
-      } else {
-        await createBlogPost(data);
-      }
-
+      await persist(status);
       router.push("/admin/blog");
-      router.refresh();
     });
   };
 
@@ -140,12 +171,18 @@ export function BlogPostForm({ post }: BlogPostFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Content</label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium">Content</label>
+          <SaveStatusBadge status={saveStatus} />
+        </div>
         <RichTextEditor
           content={content}
           onChange={setContent}
           placeholder="Write your blog post..."
         />
+        <p className="mt-2 text-xs text-muted-foreground">
+          Autosaves as a draft 5 seconds after you stop typing.
+        </p>
       </div>
 
       <div className="flex items-center gap-3 pt-4 border-t border-border">
@@ -163,6 +200,7 @@ export function BlogPostForm({ post }: BlogPostFormProps) {
         >
           {isPending ? "Publishing..." : "Publish"}
         </button>
+        <SaveStatusBadge status={saveStatus} />
       </div>
     </div>
   );

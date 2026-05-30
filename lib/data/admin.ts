@@ -31,17 +31,20 @@ export async function createBlogPost(data: {
   coverImage: string;
   tags: string[];
   category: string;
+  biPoints?: number;
+  status?: "draft" | "published";
 }) {
   await verifyAdmin();
 
   const slug = data.slug || slugify(data.title);
+  const status = data.status || "draft";
   const docRef = await adminDb.collection("blogPosts").add({
     ...data,
     slug,
-    status: "draft",
+    status,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
-    publishedAt: null,
+    publishedAt: status === "published" ? FieldValue.serverTimestamp() : null,
   });
 
   revalidateTag("blog-posts", "max");
@@ -58,6 +61,7 @@ export async function updateBlogPost(
     coverImage?: string;
     tags?: string[];
     category?: string;
+    biPoints?: number;
     status?: "draft" | "published";
   }
 ) {
@@ -96,17 +100,20 @@ export async function createTutorial(data: {
   tags: string[];
   difficulty: "beginner" | "intermediate" | "advanced";
   estimatedMinutes: number;
+  biPoints?: number;
+  status?: "draft" | "published";
 }) {
   await verifyAdmin();
 
   const slug = data.slug || slugify(data.title);
+  const status = data.status || "draft";
   const docRef = await adminDb.collection("tutorials").add({
     ...data,
     slug,
-    status: "draft",
+    status,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
-    publishedAt: null,
+    publishedAt: status === "published" ? FieldValue.serverTimestamp() : null,
   });
 
   revalidateTag("tutorials", "max");
@@ -124,6 +131,7 @@ export async function updateTutorial(
     tags?: string[];
     difficulty?: "beginner" | "intermediate" | "advanced";
     estimatedMinutes?: number;
+    biPoints?: number;
     status?: "draft" | "published";
   }
 ) {
@@ -161,19 +169,24 @@ export async function createCourse(data: {
   difficulty: "beginner" | "intermediate" | "advanced";
   tags: string[];
   estimatedHours: number;
+  biPoints?: number;
+  authors?: string[];
+  status?: "draft" | "published";
 }) {
   await verifyAdmin();
 
   const slug = data.slug || slugify(data.title);
+  const status = data.status || "draft";
   const docRef = await adminDb.collection("courses").add({
     ...data,
     slug,
+    authors: data.authors ?? [],
     longDescription: null,
-    status: "draft",
+    status,
     moduleOrder: [],
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
-    publishedAt: null,
+    publishedAt: status === "published" ? FieldValue.serverTimestamp() : null,
   });
 
   revalidateTag("courses", "max");
@@ -191,6 +204,8 @@ export async function updateCourse(
     difficulty?: "beginner" | "intermediate" | "advanced";
     tags?: string[];
     estimatedHours?: number;
+    biPoints?: number;
+    authors?: string[];
     moduleOrder?: string[];
     status?: "draft" | "published";
   }
@@ -249,6 +264,14 @@ export async function createModule(
   await verifyAdmin();
 
   const slug = data.slug || slugify(data.title);
+  const existing = await adminDb
+    .collection("courses")
+    .doc(courseId)
+    .collection("modules")
+    .count()
+    .get();
+  const order = existing.data().count;
+
   const docRef = await adminDb
     .collection("courses")
     .doc(courseId)
@@ -256,7 +279,7 @@ export async function createModule(
     .add({
       ...data,
       slug,
-      order: 0,
+      order,
       lessonOrder: [],
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
@@ -345,11 +368,22 @@ export async function createLesson(
     slug?: string;
     content: TipTapContent;
     estimatedMinutes: number;
+    biPoints?: number;
   }
 ) {
   await verifyAdmin();
 
   const slug = data.slug || slugify(data.title);
+  const existing = await adminDb
+    .collection("courses")
+    .doc(courseId)
+    .collection("modules")
+    .doc(moduleId)
+    .collection("lessons")
+    .count()
+    .get();
+  const order = existing.data().count;
+
   const docRef = await adminDb
     .collection("courses")
     .doc(courseId)
@@ -359,7 +393,7 @@ export async function createLesson(
     .add({
       ...data,
       slug,
-      order: 0,
+      order,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -387,6 +421,7 @@ export async function updateLesson(
     slug?: string;
     content?: TipTapContent;
     estimatedMinutes?: number;
+    biPoints?: number;
     order?: number;
   }
 ) {
@@ -432,6 +467,98 @@ export async function deleteLesson(
       lessonOrder: FieldValue.arrayRemove(lessonId),
       updatedAt: FieldValue.serverTimestamp(),
     });
+
+  revalidateTag("courses", "max");
+}
+
+// ─── Reordering ────────────────────────────────────────
+
+/**
+ * Move a module up or down. Re-indexes every module's `order` to 0..n
+ * (so legacy all-zero orders are normalised) and keeps the course's
+ * moduleOrder array in sync.
+ */
+export async function moveModule(
+  courseId: string,
+  moduleId: string,
+  direction: "up" | "down"
+) {
+  await verifyAdmin();
+
+  const snap = await adminDb
+    .collection("courses")
+    .doc(courseId)
+    .collection("modules")
+    .orderBy("order")
+    .get();
+
+  const ids = snap.docs.map((d) => d.id);
+  const idx = ids.indexOf(moduleId);
+  if (idx === -1) return;
+
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= ids.length) return;
+
+  [ids[idx], ids[swapIdx]] = [ids[swapIdx], ids[idx]];
+
+  const batch = adminDb.batch();
+  ids.forEach((id, i) => {
+    batch.update(
+      adminDb
+        .collection("courses")
+        .doc(courseId)
+        .collection("modules")
+        .doc(id),
+      { order: i }
+    );
+  });
+  batch.update(adminDb.collection("courses").doc(courseId), {
+    moduleOrder: ids,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  await batch.commit();
+
+  revalidateTag("courses", "max");
+}
+
+/**
+ * Move a lesson up or down within its module. Re-indexes every lesson's
+ * `order` to 0..n and keeps the module's lessonOrder array in sync.
+ */
+export async function moveLesson(
+  courseId: string,
+  moduleId: string,
+  lessonId: string,
+  direction: "up" | "down"
+) {
+  await verifyAdmin();
+
+  const moduleRef = adminDb
+    .collection("courses")
+    .doc(courseId)
+    .collection("modules")
+    .doc(moduleId);
+
+  const snap = await moduleRef.collection("lessons").orderBy("order").get();
+
+  const ids = snap.docs.map((d) => d.id);
+  const idx = ids.indexOf(lessonId);
+  if (idx === -1) return;
+
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= ids.length) return;
+
+  [ids[idx], ids[swapIdx]] = [ids[swapIdx], ids[idx]];
+
+  const batch = adminDb.batch();
+  ids.forEach((id, i) => {
+    batch.update(moduleRef.collection("lessons").doc(id), { order: i });
+  });
+  batch.update(moduleRef, {
+    lessonOrder: ids,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  await batch.commit();
 
   revalidateTag("courses", "max");
 }

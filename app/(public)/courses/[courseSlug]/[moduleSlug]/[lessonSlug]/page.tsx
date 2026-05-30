@@ -106,11 +106,67 @@ async function LessonContent({
 
       {/* Main content */}
       <article className="min-w-0">
+        {/* Mobile course-contents (native <details>, no JS) */}
+        <details className="lg:hidden mb-6 rounded-xl border border-border bg-muted/20 group">
+          <summary className="flex items-center justify-between gap-2 px-4 py-3 cursor-pointer text-sm font-medium list-none">
+            <span className="inline-flex items-center gap-2">
+              <span className="text-muted-foreground">Course contents</span>
+              <span className="text-xs text-muted-foreground">
+                ({currentIndex + 1}/{allLessons.length})
+              </span>
+            </span>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="transition-transform group-open:rotate-180 text-muted-foreground"
+            >
+              <path d="M4 6l4 4 4-4" />
+            </svg>
+          </summary>
+          <div className="px-3 pb-3 pt-1 max-h-80 overflow-y-auto space-y-3">
+            <Link
+              href={`/courses/${course.slug}`}
+              className="block text-sm text-primary hover:underline px-2"
+            >
+              &larr; {course.title}
+            </Link>
+            {modules.map((mod) => (
+              <div key={mod.id}>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 px-2">
+                  {mod.title}
+                </h3>
+                <ul className="space-y-0.5">
+                  {mod.lessons.map((l) => (
+                    <li key={l.id}>
+                      <Link
+                        href={`/courses/${course.slug}/${mod.slug}/${l.slug}`}
+                        className={`block text-sm py-1.5 px-2 rounded transition-colors ${
+                          l.slug === lessonSlug
+                            ? "bg-primary text-primary-foreground font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {l.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </details>
+
         <header className="mb-8">
           <p className="text-sm text-muted-foreground mb-2">
             {currentModule.title}
           </p>
-          <h1 className="text-3xl font-bold">{currentLesson.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">
+            {currentLesson.title}
+          </h1>
           <span className="text-sm text-muted-foreground">
             {currentLesson.estimatedMinutes} min read
           </span>
@@ -119,13 +175,18 @@ async function LessonContent({
         <RichTextRenderer content={currentLesson.content} />
 
         {/* Prev/Next navigation */}
-        <nav className="flex items-center justify-between mt-12 pt-8 border-t border-border">
+        <nav className="grid grid-cols-2 gap-3 mt-12 pt-8 border-t border-border">
           {prevLesson ? (
             <Link
               href={`/courses/${course.slug}/${prevLesson.moduleSlug}/${prevLesson.slug}`}
-              className="text-sm text-primary hover:underline"
+              className="group/nav flex flex-col rounded-xl border border-border p-4 hover:border-primary/40 hover:bg-muted/30 transition-colors"
             >
-              &larr; {prevLesson.title}
+              <span className="text-xs text-muted-foreground mb-1">
+                &larr; Previous
+              </span>
+              <span className="text-sm font-medium line-clamp-2 group-hover/nav:text-primary transition-colors">
+                {prevLesson.title}
+              </span>
             </Link>
           ) : (
             <span />
@@ -133,9 +194,14 @@ async function LessonContent({
           {nextLesson ? (
             <Link
               href={`/courses/${course.slug}/${nextLesson.moduleSlug}/${nextLesson.slug}`}
-              className="text-sm text-primary hover:underline"
+              className="group/nav flex flex-col rounded-xl border border-border p-4 text-right hover:border-primary/40 hover:bg-muted/30 transition-colors"
             >
-              {nextLesson.title} &rarr;
+              <span className="text-xs text-muted-foreground mb-1">
+                Next &rarr;
+              </span>
+              <span className="text-sm font-medium line-clamp-2 group-hover/nav:text-primary transition-colors">
+                {nextLesson.title}
+              </span>
             </Link>
           ) : (
             <span />

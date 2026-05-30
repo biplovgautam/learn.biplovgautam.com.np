@@ -1,5 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
+import { connection } from "next/server";
 import { adminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import { serialize } from "@/lib/utils";
 import type { Tutorial } from "@/lib/types";
 
 export async function getTutorials(): Promise<Tutorial[]> {
@@ -16,7 +18,7 @@ export async function getTutorials(): Promise<Tutorial[]> {
     .get();
 
   return snapshot.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() }) as Tutorial
+    (doc) => serialize({ id: doc.id, ...doc.data() }) as Tutorial
   );
 }
 
@@ -37,17 +39,19 @@ export async function getTutorialBySlug(
     .get();
 
   if (snapshot.empty) return null;
-  return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Tutorial;
+  return serialize({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() }) as Tutorial;
 }
 
 export async function getTutorialById(id: string): Promise<Tutorial | null> {
+  await connection();
   if (!isFirebaseAdminConfigured()) return null;
   const doc = await adminDb.collection("tutorials").doc(id).get();
   if (!doc.exists) return null;
-  return { id: doc.id, ...doc.data() } as Tutorial;
+  return serialize({ id: doc.id, ...doc.data() }) as Tutorial;
 }
 
 export async function getAllTutorials(): Promise<Tutorial[]> {
+  await connection();
   if (!isFirebaseAdminConfigured()) return [];
   const snapshot = await adminDb
     .collection("tutorials")
@@ -55,6 +59,6 @@ export async function getAllTutorials(): Promise<Tutorial[]> {
     .get();
 
   return snapshot.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() }) as Tutorial
+    (doc) => serialize({ id: doc.id, ...doc.data() }) as Tutorial
   );
 }

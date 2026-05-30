@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { verifySession, isAdminEmail } from "@/lib/auth-utils";
 import { AuthProvider } from "@/components/providers/auth-provider";
-import { AdminSidebar } from "@/components/layout/admin-sidebar";
+import { AdminShell } from "@/components/layout/admin-shell";
 
 async function AdminGate({ children }: { children: React.ReactNode }) {
   const session = await verifySession();
@@ -19,10 +19,7 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthProvider>
-      <div className="flex min-h-screen">
-        <AdminSidebar />
-        <main className="flex-1 p-6 lg:p-8">{children}</main>
-      </div>
+      <AdminShell>{children}</AdminShell>
     </AuthProvider>
   );
 }

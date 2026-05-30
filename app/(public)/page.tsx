@@ -7,18 +7,11 @@ import { getBlogPosts } from "@/lib/data/blog";
 import { getTutorials } from "@/lib/data/tutorials";
 import { getCourses } from "@/lib/data/courses";
 import { formatDate } from "@/lib/utils";
-import type { Timestamp } from "firebase-admin/firestore";
 
-function tsToMillis(ts: Timestamp | null | undefined): number {
+function tsToMillis(ts: string | null | undefined): number {
   if (!ts) return 0;
-  // Firebase Admin Timestamp has toMillis(); plain object fallback for serialized timestamps
-  if (typeof (ts as Timestamp).toMillis === "function") {
-    return (ts as Timestamp).toMillis();
-  }
-  // Handle serialized timestamp { _seconds, _nanoseconds }
-  const obj = ts as unknown as { _seconds?: number; seconds?: number };
-  const sec = obj._seconds ?? obj.seconds ?? 0;
-  return sec * 1000;
+  const ms = Date.parse(ts);
+  return isNaN(ms) ? 0 : ms;
 }
 
 export default function HomePage() {
@@ -108,7 +101,7 @@ export default function HomePage() {
           </div>
 
           {/* Stats bar */}
-          <div className="grid grid-cols-3 gap-8 mt-20 max-w-3xl pt-8 border-t border-border">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 mt-12 md:mt-20 max-w-3xl pt-8 border-t border-border">
             <div>
               <p className="label-mono mb-2">Applied AI</p>
               <p className="text-sm">LLMs &middot; RAG &middot; Agents</p>

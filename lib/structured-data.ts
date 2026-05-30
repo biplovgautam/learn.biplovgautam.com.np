@@ -5,6 +5,7 @@ const SITE_URL =
 
 function tsToISO(ts: unknown): string | undefined {
   if (!ts) return undefined;
+  if (typeof ts === "string") return ts;
   if (typeof (ts as { toDate?: () => Date }).toDate === "function") {
     return (ts as { toDate: () => Date }).toDate().toISOString();
   }

@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { adminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
 import type { UserProfile } from "@/lib/types";
 
@@ -19,6 +20,7 @@ export interface AdminStats {
 }
 
 export async function getAdminStats(): Promise<AdminStats> {
+  await connection();
   const empty: AdminStats = {
     users: { total: 0, newThisWeek: 0, activeThisWeek: 0 },
     content: {
@@ -95,6 +97,7 @@ export interface RecentUser {
 }
 
 export async function getRecentUsers(limit = 8): Promise<RecentUser[]> {
+  await connection();
   if (!isFirebaseAdminConfigured()) return [];
 
   const snap = await adminDb

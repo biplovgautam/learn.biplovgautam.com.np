@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
+import { Clock, Layers, BookOpen, Zap } from "lucide-react";
 import { getCourseStructure } from "@/lib/data/courses";
 import { generateCourseJsonLd } from "@/lib/structured-data";
 
@@ -27,9 +29,9 @@ export async function generateMetadata({
 }
 
 const difficultyColors = {
-  beginner: "bg-green-100 text-green-800",
-  intermediate: "bg-yellow-100 text-yellow-800",
-  advanced: "bg-red-100 text-red-800",
+  beginner: "bg-primary/15 text-primary",
+  intermediate: "bg-yellow-500/15 text-yellow-400",
+  advanced: "bg-red-500/15 text-red-400",
 };
 
 async function CourseContent({ courseSlug }: { courseSlug: string }) {
@@ -46,22 +48,73 @@ async function CourseContent({ courseSlug }: { courseSlug: string }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(generateCourseJsonLd(course)) }}
       />
-      <header className="mb-10">
-        <div className="flex items-center gap-2 mb-4">
+
+      {/* Cover hero */}
+      {course.coverImage && (
+        <div className="relative aspect-[21/9] w-full overflow-hidden rounded-3xl border border-border mb-8 bg-muted">
+          <Image
+            src={course.coverImage}
+            alt={course.title}
+            fill
+            priority
+            className="object-cover"
+            sizes="(max-width: 896px) 100vw, 896px"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/10 to-transparent" />
           <span
-            className={`text-xs font-medium px-2.5 py-1 rounded-full ${difficultyColors[course.difficulty]}`}
+            className={`absolute top-4 left-4 text-xs font-medium px-2.5 py-1 rounded-full backdrop-blur ${difficultyColors[course.difficulty]}`}
           >
             {course.difficulty}
           </span>
-          <span className="text-sm text-muted-foreground">
-            {course.estimatedHours}h &middot; {modules.length} modules &middot;{" "}
-            {totalLessons} lessons
-          </span>
         </div>
+      )}
+
+      <header className="mb-10">
+        {!course.coverImage && (
+          <div className="flex items-center gap-2 mb-4">
+            <span
+              className={`text-xs font-medium px-2.5 py-1 rounded-full ${difficultyColors[course.difficulty]}`}
+            >
+              {course.difficulty}
+            </span>
+          </div>
+        )}
         <h1 className="text-4xl font-bold leading-tight">{course.title}</h1>
+
+        {course.authors && course.authors.length > 0 && (
+          <p className="text-sm text-muted-foreground mt-3">
+            By{" "}
+            <span className="text-foreground font-medium">
+              {course.authors.join(", ")}
+            </span>
+          </p>
+        )}
+
         <p className="text-lg text-muted-foreground mt-4">
           {course.description}
         </p>
+
+        {/* Meta stats row */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-6 text-sm text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Clock size={15} strokeWidth={1.8} />
+            {course.estimatedHours}h
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Layers size={15} strokeWidth={1.8} />
+            {modules.length} modules
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <BookOpen size={15} strokeWidth={1.8} />
+            {totalLessons} lessons
+          </span>
+          {course.biPoints > 0 && (
+            <span className="inline-flex items-center gap-1.5 text-primary">
+              <Zap size={15} strokeWidth={1.8} />
+              {course.biPoints} Bi Points
+            </span>
+          )}
+        </div>
       </header>
 
       <div className="space-y-6">

@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { ImageUpload } from "@/components/editor/image-upload";
+import { useAutosave } from "@/components/editor/use-autosave";
+import { SaveStatusBadge } from "@/components/editor/save-status-badge";
 import { createTutorial, updateTutorial } from "@/lib/data/admin";
 import { slugify } from "@/lib/utils";
 import type { Tutorial, TipTapContent } from "@/lib/types";
@@ -16,39 +18,75 @@ export function TutorialForm({ tutorial }: TutorialFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  const [tutorialId, setTutorialId] = useState<string | null>(
+    tutorial?.id ?? null
+  );
+  const [currentStatus, setCurrentStatus] = useState<"draft" | "published">(
+    tutorial?.status ?? "draft"
+  );
+
   const [title, setTitle] = useState(tutorial?.title || "");
   const [slug, setSlug] = useState(tutorial?.slug || "");
   const [excerpt, setExcerpt] = useState(tutorial?.excerpt || "");
   const [coverImage, setCoverImage] = useState(tutorial?.coverImage || "");
   const [tags, setTags] = useState(tutorial?.tags?.join(", ") || "");
   const [difficulty, setDifficulty] = useState(tutorial?.difficulty || "beginner");
-  const [estimatedMinutes, setEstimatedMinutes] = useState(tutorial?.estimatedMinutes || 15);
+  const [estimatedMinutes, setEstimatedMinutes] = useState(
+    tutorial?.estimatedMinutes || 15
+  );
   const [biPoints, setBiPoints] = useState(tutorial?.biPoints || 20);
-  const [content, setContent] = useState<TipTapContent | null>(tutorial?.content || null);
+  const [content, setContent] = useState<TipTapContent | null>(
+    tutorial?.content || null
+  );
+
+  const buildData = (status: "draft" | "published") => ({
+    title,
+    slug: slug || slugify(title),
+    excerpt,
+    coverImage,
+    tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+    difficulty: difficulty as "beginner" | "intermediate" | "advanced",
+    estimatedMinutes,
+    biPoints,
+    content: content!,
+    status,
+  });
+
+  // Create on first save (capture id + keep current status), update thereafter.
+  const persist = async (status: "draft" | "published") => {
+    const data = buildData(status);
+    if (tutorialId) {
+      await updateTutorial(tutorialId, data);
+    } else {
+      const newId = await createTutorial(data);
+      setTutorialId(newId);
+    }
+    setCurrentStatus(status);
+  };
+
+  const canSave = Boolean(title.trim()) && Boolean(content);
+
+  const { status: saveStatus } = useAutosave({
+    signature: JSON.stringify({
+      title,
+      slug,
+      excerpt,
+      coverImage,
+      tags,
+      difficulty,
+      estimatedMinutes,
+      biPoints,
+      content,
+    }),
+    enabled: canSave,
+    onSave: () => persist(currentStatus),
+    delay: 5000,
+  });
 
   const handleSubmit = (status: "draft" | "published") => {
     startTransition(async () => {
-      const data = {
-        title,
-        slug: slug || slugify(title),
-        excerpt,
-        coverImage,
-        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
-        difficulty: difficulty as "beginner" | "intermediate" | "advanced",
-        estimatedMinutes,
-        biPoints,
-        content: content!,
-        status,
-      };
-
-      if (tutorial) {
-        await updateTutorial(tutorial.id, data);
-      } else {
-        await createTutorial(data);
-      }
-
+      await persist(status);
       router.push("/admin/tutorials");
-      router.refresh();
     });
   };
 
@@ -60,7 +98,10 @@ export function TutorialForm({ tutorial }: TutorialFormProps) {
           <input
             type="text"
             value={title}
-            onChange={(e) => { setTitle(e.target.value); if (!tutorial) setSlug(slugify(e.target.value)); }}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (!tutorialId) setSlug(slugify(e.target.value));
+            }}
             className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
@@ -137,8 +178,14 @@ export function TutorialForm({ tutorial }: TutorialFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Content</label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium">Content</label>
+          <SaveStatusBadge status={saveStatus} />
+        </div>
         <RichTextEditor content={content} onChange={setContent} placeholder="Write your tutorial..." />
+        <p className="mt-2 text-xs text-muted-foreground">
+          Autosaves as a draft 5 seconds after you stop typing.
+        </p>
       </div>
 
       <div className="flex items-center gap-3 pt-4 border-t border-border">
@@ -156,6 +203,7 @@ export function TutorialForm({ tutorial }: TutorialFormProps) {
         >
           {isPending ? "Publishing..." : "Publish"}
         </button>
+        <SaveStatusBadge status={saveStatus} />
       </div>
     </div>
   );

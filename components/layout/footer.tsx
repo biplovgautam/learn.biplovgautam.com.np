@@ -102,9 +102,6 @@ export function Footer() {
             <p className="label-mono mb-4">Resources</p>
             <ul className="space-y-3 text-sm">
               <li>
-                <FooterLink href="/sitemap.xml">Sitemap</FooterLink>
-              </li>
-              <li>
                 <FooterLink href="https://biplovgautam.com.np">
                   Author portfolio &#8599;
                 </FooterLink>

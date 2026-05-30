@@ -20,6 +20,7 @@ export function CourseForm({ course }: CourseFormProps) {
   const [description, setDescription] = useState(course?.description || "");
   const [coverImage, setCoverImage] = useState(course?.coverImage || "");
   const [tags, setTags] = useState(course?.tags?.join(", ") || "");
+  const [authors, setAuthors] = useState(course?.authors?.join(", ") || "Biplov Gautam");
   const [difficulty, setDifficulty] = useState(course?.difficulty || "beginner");
   const [estimatedHours, setEstimatedHours] = useState(course?.estimatedHours || 1);
   const [biPoints, setBiPoints] = useState(course?.biPoints || 100);
@@ -32,6 +33,7 @@ export function CourseForm({ course }: CourseFormProps) {
         description,
         coverImage,
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+        authors: authors.split(",").map((a) => a.trim()).filter(Boolean),
         difficulty: difficulty as "beginner" | "intermediate" | "advanced",
         estimatedHours,
         biPoints,
@@ -45,7 +47,6 @@ export function CourseForm({ course }: CourseFormProps) {
       }
 
       router.push("/admin/courses");
-      router.refresh();
     });
   };
 
@@ -123,14 +124,26 @@ export function CourseForm({ course }: CourseFormProps) {
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Tags (comma-separated)</label>
-        <input
-          type="text"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-        />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="block text-sm font-medium mb-1">Tags (comma-separated)</label>
+          <input
+            type="text"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Authors (comma-separated)</label>
+          <input
+            type="text"
+            value={authors}
+            onChange={(e) => setAuthors(e.target.value)}
+            placeholder="Biplov Gautam, Co-author Name"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-3 pt-4 border-t border-border">

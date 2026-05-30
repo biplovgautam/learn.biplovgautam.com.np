@@ -9,6 +9,10 @@ const BASE_URL =
 
 function tsToDate(ts: unknown): Date | undefined {
   if (!ts) return undefined;
+  if (typeof ts === "string") {
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? undefined : d;
+  }
   if (typeof (ts as { toDate?: () => Date }).toDate === "function") {
     return (ts as { toDate: () => Date }).toDate();
   }

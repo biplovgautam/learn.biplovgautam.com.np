@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
+import { Wrench } from "lucide-react";
 import { getAllTutorials } from "@/lib/data/tutorials";
 import { formatDate } from "@/lib/utils";
 import { deleteTutorial } from "@/lib/data/admin";
@@ -26,8 +28,24 @@ async function TutorialList() {
       {tutorials.map((tutorial) => (
         <div
           key={tutorial.id}
-          className="flex items-center justify-between rounded-lg border border-border p-4"
+          className="flex items-center gap-4 rounded-lg border border-border p-4"
         >
+          <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
+            {tutorial.coverImage ? (
+              <Image
+                src={tutorial.coverImage}
+                alt={tutorial.title}
+                fill
+                className="object-cover"
+                sizes="96px"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                <Wrench size={18} strokeWidth={1.6} />
+              </div>
+            )}
+          </div>
+
           <div className="flex-1 min-w-0">
             <Link
               href={`/admin/tutorials/${tutorial.id}`}
@@ -56,7 +74,7 @@ async function TutorialList() {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex items-center gap-2 ml-auto shrink-0">
             <Link
               href={`/admin/tutorials/${tutorial.id}`}
               className="rounded-md px-3 py-1.5 text-sm border border-border hover:bg-muted transition-colors"
