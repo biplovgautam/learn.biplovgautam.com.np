@@ -2,6 +2,7 @@ import {
   initializeApp,
   getApps,
   cert,
+  refreshToken,
   applicationDefault,
   type App,
 } from "firebase-admin/app";
@@ -14,58 +15,66 @@ let _db: Firestore | null = null;
 
 export function isFirebaseAdminConfigured(): boolean {
   const hasProjectId = !!process.env.FIREBASE_ADMIN_PROJECT_ID;
-  const hasServiceAccount = !!(
-    process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim() &&
-    (process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim() ||
-      process.env.FIREBASE_ADMIN_PRIVATE_KEY_BASE64?.trim())
-  );
+
+  // Full service-account JSON, base64-encoded — most reliable, carries its own projectId.
+  const hasServiceAccountJson =
+    !!process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT_BASE64?.trim();
+
+  // ADC "authorized_user" credentials (from `gcloud auth application-default
+  // login`), base64-encoded. Works where service-account key creation is
+  // blocked by org policy, since this is not a service-account key.
+  const hasAdc = !!process.env.FIREBASE_ADMIN_ADC_BASE64?.trim();
+
+  const hasServiceAccount =
+    hasServiceAccountJson ||
+    hasAdc ||
+    !!(
+      process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim() &&
+      (process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim() ||
+        process.env.FIREBASE_ADMIN_PRIVATE_KEY_BASE64?.trim())
+    );
 
   // Without a service account key, we rely on ADC (gcloud auth).
   // ADC is only available at runtime, not during build.
-  // Detect build: NEXT_PHASE is set during build, or we can check if we have
-  // neither service account nor ADC file.
   if (!hasServiceAccount) {
-    // If GOOGLE_APPLICATION_CREDENTIALS env is not set AND the default ADC
-    // file likely doesn't exist in build environments, be conservative.
-    // At runtime (dev/prod server), ADC works fine via gcloud auth.
-    const isBuild = process.env.NEXT_PHASE === "phase-production-build" ||
+    const isBuild =
+      process.env.NEXT_PHASE === "phase-production-build" ||
       process.env.NEXT_PHASE === "phase-production-server";
 
     if (isBuild) return false;
+    return hasProjectId;
   }
 
-  return hasProjectId;
+  // Full JSON carries its own projectId, so don't require the separate env var.
+  return hasServiceAccountJson || hasProjectId;
+}
+
+/** Strip surrounding quotes and convert escaped "\n" into real newlines. */
+function normalizePem(key: string): string {
+  let k = key.trim();
+  if (
+    (k.startsWith('"') && k.endsWith('"')) ||
+    (k.startsWith("'") && k.endsWith("'"))
+  ) {
+    k = k.slice(1, -1);
+  }
+  return k.replace(/\\n/g, "\n");
 }
 
 /**
- * Resolves the service-account private key from env vars.
- *
- * Preferred: FIREBASE_ADMIN_PRIVATE_KEY_BASE64 — the entire PEM base64-encoded.
- * This is immune to newline mangling by hosting dashboards (the usual cause of
- * "error:1E08010C:DECODER routines::unsupported").
- *
- * Fallback: FIREBASE_ADMIN_PRIVATE_KEY — raw PEM. We strip surrounding quotes
- * and convert escaped "\n" into real newlines.
+ * Resolves the private key from env vars.
+ *  - FIREBASE_ADMIN_PRIVATE_KEY_BASE64: base64 of the PEM (immune to newline mangling)
+ *  - FIREBASE_ADMIN_PRIVATE_KEY: raw PEM
+ * Both are normalized (quotes stripped, "\n" -> newlines) afterwards.
  */
 function resolvePrivateKey(): string | undefined {
   const b64 = process.env.FIREBASE_ADMIN_PRIVATE_KEY_BASE64?.trim();
   if (b64) {
-    return Buffer.from(b64, "base64").toString("utf8").trim();
+    return normalizePem(Buffer.from(b64, "base64").toString("utf8"));
   }
-
   const raw = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
   if (!raw) return undefined;
-
-  let key = raw.trim();
-  if (
-    (key.startsWith('"') && key.endsWith('"')) ||
-    (key.startsWith("'") && key.endsWith("'"))
-  ) {
-    key = key.slice(1, -1);
-  }
-  // Convert literal backslash-n into real newlines (no-op if already real).
-  key = key.replace(/\\n/g, "\n");
-  return key;
+  return normalizePem(raw);
 }
 
 function getAdminApp(): App {
@@ -75,8 +84,32 @@ function getAdminApp(): App {
     return _app;
   }
 
-  // If private key is available, use service account cert
-  // Otherwise fall back to Application Default Credentials (ADC)
+  // 1. Preferred: entire service-account JSON, base64-encoded (one env var, no
+  //    per-field newline issues). FIREBASE_ADMIN_SERVICE_ACCOUNT_BASE64.
+  const serviceAccountB64 =
+    process.env.FIREBASE_ADMIN_SERVICE_ACCOUNT_BASE64?.trim();
+  if (serviceAccountB64) {
+    const json = JSON.parse(
+      Buffer.from(serviceAccountB64, "base64").toString("utf8")
+    );
+    _app = initializeApp({ credential: cert(json) });
+    return _app;
+  }
+
+  // 1b. ADC "authorized_user" credentials, base64-encoded. Use when service
+  //     account key creation is blocked by org policy. This is the contents of
+  //     ~/.config/gcloud/application_default_credentials.json.
+  const adcB64 = process.env.FIREBASE_ADMIN_ADC_BASE64?.trim();
+  if (adcB64) {
+    const json = JSON.parse(Buffer.from(adcB64, "base64").toString("utf8"));
+    _app = initializeApp({
+      credential: refreshToken(json),
+      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+    });
+    return _app;
+  }
+
+  // 2. Individual fields (private key as raw PEM or base64).
   const privateKey = resolvePrivateKey();
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
   const hasServiceAccount = !!(clientEmail && privateKey);
