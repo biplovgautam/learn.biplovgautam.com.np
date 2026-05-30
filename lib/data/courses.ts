@@ -1,6 +1,10 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { connection } from "next/server";
-import { adminDb, isFirebaseAdminConfigured } from "@/lib/firebase/admin";
+import {
+  adminDb,
+  isFirebaseAdminConfigured,
+  safeRead,
+} from "@/lib/firebase/admin";
 import { serialize } from "@/lib/utils";
 import type { Course, Module, Lesson } from "@/lib/types";
 
@@ -11,15 +15,17 @@ export async function getCourses(): Promise<Course[]> {
 
   if (!isFirebaseAdminConfigured()) return [];
 
-  const snapshot = await adminDb
-    .collection("courses")
-    .where("status", "==", "published")
-    .orderBy("publishedAt", "desc")
-    .get();
+  return safeRead(async () => {
+    const snapshot = await adminDb
+      .collection("courses")
+      .where("status", "==", "published")
+      .orderBy("publishedAt", "desc")
+      .get();
 
-  return snapshot.docs.map(
-    (doc) => serialize({ id: doc.id, ...doc.data() }) as Course
-  );
+    return snapshot.docs.map(
+      (doc) => serialize({ id: doc.id, ...doc.data() }) as Course
+    );
+  }, []);
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
@@ -29,15 +35,20 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
 
   if (!isFirebaseAdminConfigured()) return null;
 
-  const snapshot = await adminDb
-    .collection("courses")
-    .where("slug", "==", slug)
-    .where("status", "==", "published")
-    .limit(1)
-    .get();
+  return safeRead(async () => {
+    const snapshot = await adminDb
+      .collection("courses")
+      .where("slug", "==", slug)
+      .where("status", "==", "published")
+      .limit(1)
+      .get();
 
-  if (snapshot.empty) return null;
-  return serialize({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() }) as Course;
+    if (snapshot.empty) return null;
+    return serialize({
+      id: snapshot.docs[0].id,
+      ...snapshot.docs[0].data(),
+    }) as Course;
+  }, null);
 }
 
 export async function getCourseById(id: string): Promise<Course | null> {
@@ -188,26 +199,28 @@ export async function getCourseStructure(
   const course = await getCourseBySlug(courseSlug);
   if (!course) return null;
 
-  const modulesSnap = await adminDb
-    .collection("courses")
-    .doc(course.id)
-    .collection("modules")
-    .orderBy("order")
-    .get();
+  return safeRead(async () => {
+    const modulesSnap = await adminDb
+      .collection("courses")
+      .doc(course.id)
+      .collection("modules")
+      .orderBy("order")
+      .get();
 
-  const modules = await Promise.all(
-    modulesSnap.docs.map(async (modDoc) => {
-      const mod = serialize({ id: modDoc.id, ...modDoc.data() }) as Module;
-      const lessonsSnap = await modDoc.ref
-        .collection("lessons")
-        .orderBy("order")
-        .get();
-      const lessons = lessonsSnap.docs.map(
-        (lesDoc) => serialize({ id: lesDoc.id, ...lesDoc.data() }) as Lesson
-      );
-      return { ...mod, lessons };
-    })
-  );
+    const modules = await Promise.all(
+      modulesSnap.docs.map(async (modDoc) => {
+        const mod = serialize({ id: modDoc.id, ...modDoc.data() }) as Module;
+        const lessonsSnap = await modDoc.ref
+          .collection("lessons")
+          .orderBy("order")
+          .get();
+        const lessons = lessonsSnap.docs.map(
+          (lesDoc) => serialize({ id: lesDoc.id, ...lesDoc.data() }) as Lesson
+        );
+        return { ...mod, lessons };
+      })
+    );
 
-  return { course, modules };
+    return { course, modules };
+  }, { course, modules: [] });
 }

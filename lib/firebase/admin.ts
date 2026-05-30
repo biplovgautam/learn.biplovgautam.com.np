@@ -36,6 +36,27 @@ export function isFirebaseAdminConfigured(): boolean {
   return hasProjectId;
 }
 
+/**
+ * Normalizes a service-account private key pulled from an env var.
+ * Handles the two ways the key commonly gets mangled:
+ *  - wrapped in surrounding double/single quotes (copied from JSON)
+ *  - escaped "\n" sequences instead of real newlines
+ * Without this you get: error:1E08010C:DECODER routines::unsupported
+ */
+function normalizePrivateKey(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  let key = raw.trim();
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+  // Convert literal backslash-n into real newlines (no-op if already real).
+  key = key.replace(/\\n/g, "\n");
+  return key;
+}
+
 function getAdminApp(): App {
   if (_app) return _app;
   if (getApps().length) {
@@ -45,7 +66,7 @@ function getAdminApp(): App {
 
   // If private key is available, use service account cert
   // Otherwise fall back to Application Default Credentials (ADC)
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim();
+  const privateKey = normalizePrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
   const hasServiceAccount = !!(clientEmail && privateKey);
 
@@ -54,7 +75,7 @@ function getAdminApp(): App {
       credential: cert({
         projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
         clientEmail,
-        privateKey: privateKey.replace(/\\n/g, "\n"),
+        privateKey,
       }),
     });
   } else {
@@ -82,3 +103,21 @@ export const adminDb: Firestore = new Proxy({} as Firestore, {
     return Reflect.get(_db, prop);
   },
 });
+
+/**
+ * Runs a Firestore read and returns `fallback` if it throws (bad creds,
+ * network, or running during a build with no valid credentials). This keeps
+ * `next build` prerendering from crashing when the database is unreachable —
+ * the static shell renders empty and fills in at runtime via revalidation.
+ */
+export async function safeRead<T>(
+  fn: () => Promise<T>,
+  fallback: T
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error("[firestore] read failed, using fallback:", err);
+    return fallback;
+  }
+}
