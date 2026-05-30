@@ -16,6 +16,22 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        // Allow the Google sign-in popup to talk back to the opener.
+        // Without this, COOP blocks window.close/closed and the popup
+        // flow can hang or fail.
+        source: "/:path*",
+        headers: [
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

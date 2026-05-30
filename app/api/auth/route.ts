@@ -64,7 +64,16 @@ export async function POST(request: Request) {
     return Response.json({ success: true });
   } catch (err) {
     console.error("Auth error:", err);
-    return Response.json({ error: "Invalid token" }, { status: 401 });
+    const message = err instanceof Error ? err.message : String(err);
+    const code =
+      err && typeof err === "object" && "code" in err
+        ? String((err as { code: unknown }).code)
+        : undefined;
+    // Temporary: surface the real cause to diagnose the 401 in production.
+    return Response.json(
+      { error: "Invalid token", detail: message, code },
+      { status: 401 }
+    );
   }
 }
 
